@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cleaning Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .login-section, .main-app {
+            display: none;
+        }
+        
+        .login-section.active, .main-app.active {
+            display: block;
+        }
+        
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+            background: #f8f9fa;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .task-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .task-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #4facfe;
+        }
+        
+        .task-card.overdue {
+            border-left-color: #ff6b6b;
+            background: #fff5f5;
+        }
+        
+        .task-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .task-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .review-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid #f39c12;
+            margin-bottom: 15px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .user-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .rating-stars {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+        }
+        
+        .star {
+            font-size: 24px;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        
+        .star.active, .star:hover {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧹 Cleaning Tracker</h1>
+            <p>Keep your apartment clean together!</p>
+        </div>
+        
+        <div class="content">
+            <!-- Login Section -->
+            <div class="login-section active" id="loginSection">
+                <div class="login-form">
+                    <h2>Login</h2>
+                    <div id="loginAlert"></div>
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label for="username">Username:</label>
+                            <select id="username" required>
+                                <option value="">Select your username</option>
+                                <option value="roommate1">roommate1</option>
+                                <option value="roommate2">roommate2</option>
+                                <option value="roommate3">roommate3</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" value="password123" required>
+                        </div>
+                        <button type="submit" class="btn">Login</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Main App -->
+            <div class="main-app" id="mainApp">
+                <div class="user-info">
+                    <h2>Welcome, <span id="currentUser"></span>!</h2>
+                    <button class="btn" onclick="logout()">Logout</button>
+                </div>
+                
+                <div id="appAlert"></div>
+                
+                <!-- Current Assignments -->
+                <div class="section">
+                    <h2>📋 Current Task Assignments</h2>
+                    <div id="currentAssignments" class="task-grid">
+                        <p>Loading assignments...</p>
+                    </div>
+                </div>
+                
+                <!-- Pending Reviews -->
+                <div class="section">
+                    <h2>⭐ Tasks Waiting for Review</h2>
+                    <div id="pendingReviews">
+                        <p>Loading reviews...</p>
+                    </div>
+                </div>
+                
+                <!-- Recent History -->
+                <div class="section">
+                    <h2>📊 Recent Completion History</h2>
+                    <div id="completionHistory">
+                        <p>Loading history...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Complete Task Modal -->
+    <div class="modal" id="completeTaskModal">
+        <div class="modal-content">
+            <h3>Complete Task</h3>
+            <form id="completeTaskForm">
+                <input type="hidden" id="taskAssignmentId">
+                <div class="form-group">
+                    <label>Task:</label>
+                    <p id="taskName"></p>
+                </div>
+                <div class="form-group">
+                    <label for="completionNotes">Notes (optional):</label>
+                    <textarea id="completionNotes" rows="3" placeholder="Any additional notes about completing this task..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-success">Mark as Complete</button>
+                <button type="button" class="btn" onclick="closeModal('completeTaskModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Review Task Modal -->
+    <div class="modal" id="reviewTaskModal">
+        <div class="modal-content">
+            <h3>Review Task</h3>
+            <form id="reviewTaskForm">
+                <input type="hidden" id="reviewCompletionId">
+                <div class="form-group">
+                    <label>Task:</label>
+                    <p id="reviewTaskName"></p>
+                </div>
+                <div class="form-group">
+                    <label>Completed by:</label>
+                    <p id="reviewCompletedBy"></p>
+                </div>
+                <div class="form-group">
+                    <label>Rating (1-5 stars):</label>
+                    <div class="rating-stars" id="ratingStars">
+                        <span class="star" data-rating="1">⭐</span>
+                        <span class="star" data-rating="2">⭐</span>
+                        <span class="star" data-rating="3">⭐</span>
+                        <span class="star" data-rating="4">⭐</span>
+                        <span class="star" data-rating="5">⭐</span>
+                    </div>
+                    <input type="hidden" id="taskRating" value="5">
+                </div>
+                <div class="form-group">
+                    <label for="reviewComments">Comments:</label>
+                    <textarea id="reviewComments" rows="3" placeholder="Any feedback on the task completion..."></textarea>
+                </div>
+                <button type="button" class="btn btn-success" onclick="submitReview(true)">Approve</button>
+                <button type="button" class="btn btn-danger" onclick="submitReview(false)">Reject</button>
+                <button type="button" class="btn" onclick="closeModal('reviewTaskModal')">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        let currentUserId = null;
+        let currentUsername = null;
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            // Login form
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // Complete task form
+            document.getElementById('completeTaskForm').addEventListener('submit', handleCompleteTask);
+            
+            // Rating stars
+            document.querySelectorAll('.star').forEach(star => {
+                star.addEventListener('click', handleStarClick);
+                star.addEventListener('mouseover', handleStarHover);
+            });
+            
+            document.getElementById('ratingStars').addEventListener('mouseleave', resetStars);
+        }
+        
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/rpc/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showAlert('loginAlert', result.error, 'error');
+                } else {
+                    currentUserId = result.user_id;
+                    currentUsername = result.username;
+                    document.getElementById('currentUser').textContent = currentUsername;
+                    
+                    // Switch to main app
+                    document.getElementById('loginSection').classList.remove('active');
+                    document.getElementById('mainApp').classList.add('active');
+                    
+                    // Load data
+                    loadDashboardData();
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showAlert('loginAlert', 'Connection error. Please check if the API is running.', 'error');
+            }
+        }
+        
+        async function loadDashboardData() {
+            await Promise.all([
+                loadCurrentAssignments(),
+                loadPendingReviews(),
+                loadCompletionHistory()
+            ]);
+        }
+        
+        async function loadCurrentAssignments() {
+            try {
+                const response = await fetch(`${API_BASE}/current_assignments`);
+                const assignments = await response.json();
+                
+                const container = document.getElementById('currentAssignments');
+                
+                if (assignments.length === 0) {
+                    container.innerHTML = '<p>No active assignments found.</p>';
+                    return;
+                }
+                
+                container.innerHTML = assignments.map(assignment => `
+                    <div class="task-card ${assignment.is_overdue ? 'overdue' : ''}">
+                        <h3>${assignment.task_name}</h3>
+                        <div class="task-info">
+                            <div><strong>Category:</strong> ${assignment.category}</div>
+                            <div><strong>Assigned to:</strong> ${assignment.assigned_to}</div>
+                            <div><strong>Duration:</strong> ${assignment.estimated_duration_minutes} min</div>
+                            <div><strong>Status:</strong> ${assignment.is_overdue ? 'Overdue' : 'Active'}</div>
+                        </div>
+                        <p><strong>Description:</strong> ${assignment.description}</p>
+                        ${assignment.assigned_user_id === currentUserId ? 
+                            `<button class="btn btn-success" onclick="openCompleteTaskModal(${assignment.id}, '${assignment.task_name}')">Complete Task</button>` : 
+                            '<p><em>Not your turn</em></p>'
+                        }
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading assignments:', error);
+                document.getElementById('currentAssignments').innerHTML = '<p>Error loading assignments.</p>';
+            }
+        }
+        
+        async function loadPendingReviews() {
+            try {
+                const response = await fetch(`${API_BASE}/pending_reviews`);
+                const reviews = await response.json();
+                
+                const container = document.getElementById('pendingReviews');
+                
+                if (reviews.length === 0) {
+                    container.innerHTML = '<p>No tasks waiting for review.</p>';
+                    return;
+                }
+                
+                // Filter reviews where current user can review
+                const userReviews = reviews.filter(review => 
+                    review.potential_reviewers.includes(currentUserId)
+                );
+                
+                if (userReviews.length === 0) {
+                    container.innerHTML = '<p>No tasks for you to review.</p>';
+                    return;
+                }
+                
+                container.innerHTML = userReviews.map(review => `
+                    <div class="review-card">
+                        <h3>${review.task_name}</h3>
+                        <p><strong>Completed by:</strong> ${review.completed_by}</p>
+                        <p><strong>Completed at:</strong> ${new Date(review.completed_at).toLocaleString()}</p>
+                        ${review.notes ? `<p><strong>Notes:</strong> ${review.notes}</p>` : ''}
+                        <button class="btn" onclick="openReviewTaskModal(${review.completion_id}, '${review.task_name}', '${review.completed_by}')">Review Task</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading pending reviews:', error);
+                document.getElementById('pendingReviews').innerHTML = '<p>Error loading reviews.</p>';
+            }
+        }
+        
+        async function loadCompletionHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/completion_history?order=completed_at.desc&limit=10`);
+                const history = await response.json();
+                
+                const container = document.getElementById('completionHistory');
+                
+                if (history.length === 0) {
+                    container.innerHTML = '<p>No completion history found.</p>';
+                    return;
+                }
+                
+                container.innerHTML = history.map(completion => `
+                    <div class="task-card">
+                        <h3>${completion.task_name}</h3>
+                        <div class="task-info">
+                            <div><strong>Completed by:</strong> ${completion.completed_by}</div>
+                            <div><strong>Status:</strong> ${completion.status}</div>
+                            <div><strong>Reviews:</strong> ${completion.review_count}</div>
+                            <div><strong>Rating:</strong> ${completion.average_rating ? completion.average_rating.toFixed(1) : 'N/A'}</div>
+                        </div>
+                        <p><strong>Completed:</strong> ${new Date(completion.completed_at).toLocaleString()}</p>
+                        ${completion.notes ? `<p><strong>Notes:</strong> ${completion.notes}</p>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading completion history:', error);
+                document.getElementById('completionHistory').innerHTML = '<p>Error loading history.</p>';
+            }
+        }
+        
+        function openCompleteTaskModal(taskAssignmentId, taskName) {
+            document.getElementById('taskAssignmentId').value = taskAssignmentId;
+            document.getElementById('taskName').textContent = taskName;
+            document.getElementById('completeTaskModal').classList.add('active');
+        }
+        
+        function openReviewTaskModal(completionId, taskName, completedBy) {
+            document.getElementById('reviewCompletionId').value = completionId;
+            document.getElementById('reviewTaskName').textContent = taskName;
+            document.getElementById('reviewCompletedBy').textContent = completedBy;
+            document.getElementById('reviewTaskModal').classList.add('active');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+        
+        async function handleCompleteTask(e) {
+            e.preventDefault();
+            
+            const taskAssignmentId = document.getElementById('taskAssignmentId').value;
+            const notes = document.getElementById('completionNotes').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/rpc/complete_task`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        task_assignment_id: parseInt(taskAssignmentId),
+                        completed_by_user_id: currentUserId,
+                        notes: notes || null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showAlert('appAlert', result.error, 'error');
+                } else {
+                    showAlert('appAlert', result.message, 'success');
+                    closeModal('completeTaskModal');
+                    // Clear form
+                    document.getElementById('completionNotes').value = '';
+                    // Reload data
+                    loadDashboardData();
+                }
+            } catch (error) {
+                console.error('Error completing task:', error);
+                showAlert('appAlert', 'Error completing task.', 'error');
+            }
+        }
+        
+        async function submitReview(approved) {
+            const completionId = document.getElementById('reviewCompletionId').value;
+            const rating = document.getElementById('taskRating').value;
+            const comments = document.getElementById('reviewComments').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/rpc/review_task`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        completion_id: parseInt(completionId),
+                        reviewer_user_id: currentUserId,
+                        approved: approved,
+                        rating: parseInt(rating),
+                        comments: comments || null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showAlert('appAlert', result.error, 'error');
+                } else {
+                    showAlert('appAlert', result.message, 'success');
+                    closeModal('reviewTaskModal');
+                    // Clear form
+                    document.getElementById('reviewComments').value = '';
+                    resetStars();
+                    // Reload data
+                    loadDashboardData();
+                }
+            } catch (error) {
+                console.error('Error reviewing task:', error);
+                showAlert('appAlert', 'Error submitting review.', 'error');
+            }
+        }
+        
+        function handleStarClick(e) {
+            const rating = e.target.dataset.rating;
+            document.getElementById('taskRating').value = rating;
+            updateStars(rating);
+        }
+        
+        function handleStarHover(e) {
+            const rating = e.target.dataset.rating;
+            updateStars(rating);
+        }
+        
+        function resetStars() {
+            const currentRating = document.getElementById('taskRating').value;
+            updateStars(currentRating);
+        }
+        
+        function updateStars(rating) {
+            document.querySelectorAll('.star').forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+        
+        function showAlert(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+        
+        function logout() {
+            currentUserId = null;
+            currentUsername = null;
+            document.getElementById('mainApp').classList.remove('active');
+            document.getElementById('loginSection').classList.add('active');
+            // Clear form
+            document.getElementById('loginForm').reset();
+            document.getElementById('username').value = '';
+        }
+    </script>
+</body>
+</html>
