@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:15
+    container_name: cleaning_tracker_db_test
+    environment:
+      POSTGRES_DB: cleaning_tracker_test
+      POSTGRES_USER: cleaning_user
+      POSTGRES_PASSWORD: cleaning_pass
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    volumes:
+      - ../init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ../api_setup.sql:/docker-entrypoint-initdb.d/02-api_setup.sql
+      - ./test_data.sql:/docker-entrypoint-initdb.d/03-test_data.sql
+    restart: "no"  # Don't restart test containers
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cleaning_user -d cleaning_tracker_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    tmpfs:
+      - /var/lib/postgresql/data  # Use tmpfs for faster tests and cleanup
+
+  postgrest-test:
+    image: postgrest/postgrest:v12.0.2
+    container_name: cleaning_tracker_api_test
+    ports:
+      - "3001:3000"  # Different port to avoid conflicts
+    environment:
+      PGRST_DB_URI: postgres://api_user:api_pass@postgres-test:5432/cleaning_tracker_test
+      PGRST_OPENAPI_SERVER_PROXY_URI: http://localhost:3001
+      PGRST_DB_SCHEMAS: api
+      PGRST_DB_ANON_ROLE: api_anon
+      PGRST_JWT_SECRET: test-jwt-secret-not-for-production
+      PGRST_LOG_LEVEL: error  # Reduce noise during tests
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+    restart: "no"
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: cleaning_tracker_tests
+    environment:
+      - POSTGRES_HOST=postgres-test
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=cleaning_tracker_test
+      - POSTGRES_USER=cleaning_user
+      - POSTGRES_PASSWORD=cleaning_pass
+      - API_BASE_URL=http://postgrest-test:3000
+      - PYTHONPATH=/app
+    volumes:
+      - .:/app
+      - test_reports:/app/reports
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      postgrest-test:
+        condition: service_started
+    working_dir: /app
+    command: ["python", "-m", "pytest", "tests/", "-v", "--tb=short", "--junitxml=reports/junit.xml", "--html=reports/report.html", "--self-contained-html"]
+    restart: "no"
+
+volumes:
+  test_reports:
