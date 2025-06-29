@@ -1,0 +1,25 @@
+[project]
+name = "cleaning-task-tracker"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Wiktor Gora",email = "xw.gora.x@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pytest (>=8.4.1,<9.0.0)",
+    "requests (>=2.32.4,<3.0.0)",
+    "psycopg2-binary (>=2.9.10,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
+psycopg2-binary = "^2.9.10"
+requests = "^2.32.4"
+

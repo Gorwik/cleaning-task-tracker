@@ -1,0 +1,13 @@
+Ok I see fall into the rabbit hole and we can't escape. │ │ Fist step: │ │ From @README.md extract all information about what must be implemented step by step, feature by feature, │ │ enpoint by enpoint. Ingest that into @GEMINI.md as plan to do. After each step complition we will check │ │ this off. │ │ Second step: │ │ We have to change your approach to code creation and testing. Now we will implement feature once at │ │ time. The process will be look like: Determine exactly what feature will do. Ingest that requrement into │ │ @GEMINI.md. Prepare list how to test it. Again ingest that plan into @README.md. After that we will │ │ create appropriate test. After that code resposible for delivering particular feture will be generated. │ │ Test will be executed. If tests will fail a few times in the row stop and ask me what step should be │ │ taken. We will think together what to do then. │ │ Third step: │ │ When I was watching your workflow I saw some flows: │ │ 1. Before starting coding you should prepare approprioate background. You at first should search through │ │ the internet trying to find documentation about particulat techology, find examples in github repos and │ │ create knowladgebase which after U should save in @GEMINI.md. │ │ 2. When more than one test fails. You should focus at only one and make code adjustment in regard to │ │ choosen failed test. │ │ 3. When U made changes in code triyng to make failed test pass, but other tests starts fails U should │ │ go back to the previous state or start talking with me about issue. │ │ 4. Sometimes I saw U started to make stupid changes like change variables nameing from "username" to │ │ "p_username". Don't do that.
+Summarizig:
+1. Before writing first line of code:
+- Prepare business requrement
+- PRepare roadmap, plan step by step what to implement
+- Base on that gather knowladgebase, use GoogleSerch tool or ask me for help
+2. Implement feature one at the time
+- Fist write test for that
+- Write code Implementation
+- Ask me for verificatin
+- Test new functionality
+    - If pass go to the next step
+    - If fails a few times in the row ask me what to do next

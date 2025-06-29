@@ -1,119 +1,94 @@
+-- Create a dedicated schema for our API
+CREATE SCHEMA api;
+
+-- Create roles for the application
+-- api_user will be used by PostgREST to connect to the database
+CREATE ROLE api_user LOGIN PASSWORD 'api_pass';
+-- api_anon will be the role for anonymous users
+CREATE ROLE api_anon nologin;
+-- api_authenticated will be the role for authenticated users
+CREATE ROLE api_authenticated nologin;
+
+-- Grant usage on the schema to the new roles
+GRANT USAGE ON SCHEMA api TO api_user, api_anon, api_authenticated;
+GRANT USAGE ON SCHEMA public TO api_user, api_anon, api_authenticated;
+
+-- Grant basic permissions
+GRANT api_anon TO api_user;
+GRANT api_authenticated TO api_user;
+
+-- Grant api_user role to the cleaning_user so it can switch to it
+GRANT api_user TO cleaning_user;
+
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- Users table (your roommates)
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE, -- Optional for notifications
-    phone VARCHAR(20), -- Optional for notifications
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Define the core tables in the 'public' schema
+CREATE TABLE IF NOT EXISTS public.users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Task types (trash: mixed, plastic, paper; cleaning: bathroom, kitchen, floors)
-CREATE TABLE tasks (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    category VARCHAR(20) NOT NULL CHECK (category IN ('trash', 'cleaning')),
-    description TEXT,
-    estimated_duration_minutes INTEGER DEFAULT 30,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS public.tasks (
+    task_id SERIAL PRIMARY KEY,
+    task_name VARCHAR(255) UNIQUE NOT NULL,
+    description TEXT
 );
 
--- Current task assignments (who's turn is it?)
-CREATE TABLE task_assignments (
-    id SERIAL PRIMARY KEY,
-    task_id INTEGER NOT NULL REFERENCES tasks(id),
-    assigned_user_id INTEGER NOT NULL REFERENCES users(id),
-    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    due_date TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE,
-    UNIQUE(task_id, is_active) -- Only one active assignment per task
+CREATE TABLE IF NOT EXISTS public.task_assignments (
+    assignment_id SERIAL PRIMARY KEY,
+    task_id INT NOT NULL REFERENCES public.tasks(task_id),
+    user_id INT NOT NULL REFERENCES public.users(user_id),
+    assigned_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    -- null = not reviewed, true = approved, false = rejected
+    is_approved BOOLEAN DEFAULT NULL,
+    UNIQUE(task_id, user_id, completed_at) -- A user can be assigned the same task multiple times, but not if the last one isn't completed.
 );
 
--- Task completion records
-CREATE TABLE task_completions (
-    id SERIAL PRIMARY KEY,
-    task_assignment_id INTEGER NOT NULL REFERENCES task_assignments(id),
-    completed_by_user_id INTEGER NOT NULL REFERENCES users(id),
-    completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    notes TEXT,
-    photo_url VARCHAR(500), -- Optional: photo proof
-    status VARCHAR(20) DEFAULT 'pending_review' CHECK (status IN ('pending_review', 'approved', 'rejected')),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Grant permissions for the anonymous role on our tables
+GRANT SELECT ON TABLE public.users TO api_anon, api_authenticated;
+GRANT SELECT ON TABLE public.tasks TO api_anon, api_authenticated;
+GRANT SELECT ON TABLE public.task_assignments TO api_anon, api_authenticated;
 
--- Task reviews (roommates can approve/reject completed tasks)
-CREATE TABLE task_reviews (
-    id SERIAL PRIMARY KEY,
-    task_completion_id INTEGER NOT NULL REFERENCES task_completions(id),
-    reviewer_user_id INTEGER NOT NULL REFERENCES users(id),
-    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
-    comments TEXT,
-    approved BOOLEAN NOT NULL,
-    reviewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(task_completion_id, reviewer_user_id) -- Each user can review once per completion
-);
+-- Grant permissions for the authenticated user role
+GRANT ALL ON TABLE public.users TO api_user;
+GRANT ALL ON TABLE public.tasks TO api_user;
+GRANT ALL ON TABLE public.task_assignments TO api_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO api_user;
 
--- Notification queue (for SMS/email notifications)
-CREATE TABLE notifications (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id),
-    type VARCHAR(50) NOT NULL, -- 'task_assigned', 'task_overdue', 'task_completed', 'review_requested'
-    title VARCHAR(200) NOT NULL,
-    message TEXT NOT NULL,
-    sent_via VARCHAR(20) CHECK (sent_via IN ('email', 'sms', 'both')), -- Optional: only if notification sent
-    sent_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_read BOOLEAN DEFAULT FALSE
-);
+-- Seed initial data
+-- Passwords are 'password123' hashed with pgcrypto
+INSERT INTO public.users (username, password_hash) VALUES
+('user1', crypt('password123', gen_salt('bf'))),
+('user2', crypt('password123', gen_salt('bf'))),
+('user3', crypt('password123', gen_salt('bf')));
 
--- Insert initial data
-INSERT INTO users (username, email, phone, password_hash) VALUES
-('roommate1', 'roommate1@example.com', '+1234567890', crypt('password123', gen_salt('bf'))),
-('roommate2', NULL, NULL, crypt('password123', gen_salt('bf'))), -- No notifications
-('roommate3', 'roommate3@example.com', '+1234567892', crypt('password123', gen_salt('bf')));
+INSERT INTO public.tasks (task_name, description) VALUES
+('Kitchen Cleaning', 'Clean the kitchen surfaces and floor.'),
+('Bathroom Cleaning', 'Clean the toilet, shower, and sink.'),
+('Living Room Tidying', 'Tidy up the living room area.'),
+('Trash Duty', 'Take out the trash and recycling.'),
+('Vacuuming', 'Vacuum all carpets and rugs.'),
+('Dishwashing', 'Wash all dirty dishes.');
 
-INSERT INTO tasks (name, category, description, estimated_duration_minutes) VALUES
-('Mixed Trash', 'trash', 'Take out mixed/general waste trash', 15),
-('Plastic Recycling', 'trash', 'Take out plastic recycling', 15),
-('Paper Recycling', 'trash', 'Take out paper recycling', 15),
-('Bathroom Cleaning', 'cleaning', 'Clean bathroom: toilet, sink, shower, floor', 45),
-('Kitchen Cleaning', 'cleaning', 'Clean kitchen: dishes, counters, stove, floor', 60),
-('Floor Cleaning', 'cleaning', 'Vacuum/mop common area floors', 30);
+-- Staggered initial assignments for testing
+INSERT INTO public.task_assignments (task_id, user_id) VALUES
+(1, 1),
+(2, 2),
+(3, 3),
+(4, 1),
+(5, 2),
+(6, 3);
 
--- Create initial task assignments (round-robin style)
-WITH numbered_tasks AS (
-    SELECT id, name, ROW_NUMBER() OVER (ORDER BY name) as rn
-    FROM tasks
-),
-numbered_users AS (
-    SELECT id, username, ROW_NUMBER() OVER (ORDER BY username) as rn
-    FROM users
-)
-INSERT INTO task_assignments (task_id, assigned_user_id)
-SELECT 
-    t.id, 
-    u.id
-FROM numbered_tasks t
-JOIN numbered_users u ON ((t.rn - 1) % 3) + 1 = u.rn;
+-- Enable RLS (Row Level Security) for authentication
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.task_assignments ENABLE ROW LEVEL SECURITY;
 
--- Create indexes for better performance
-CREATE INDEX idx_task_assignments_active ON task_assignments(task_id, is_active);
-CREATE INDEX idx_task_completions_status ON task_completions(status);
-CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read);
-
--- Create updated_at trigger function
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Apply trigger to users table
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- For now, allow all access (we'll add proper RLS policies later)
+CREATE POLICY allow_all_users ON public.users FOR ALL TO api_anon, api_authenticated USING (true);
+CREATE POLICY allow_all_tasks ON public.tasks FOR ALL TO api_anon, api_authenticated USING (true);
+CREATE POLICY allow_all_assignments ON public.task_assignments FOR ALL TO api_anon, api_authenticated USING (true);
