@@ -1,0 +1,41 @@
+# Mandatory Development Phases & Verification Gates
+
+## Phase 1: Research & Planning (MANDATORY)
+**Must be completed before any code implementation**
+
+1. **Define Requirements** - Update [README.md](mdc:README.md) with precise business requirements
+2. **Build Knowledge Base** - Research and document in [KNOWLEDGE_BASE.md](mdc:KNOWLEDGE_BASE.md)
+3. **USER VERIFICATION GATE** - Present knowledge base and wait for explicit approval
+
+## Phase 2: Test-Driven Implementation
+**One feature at a time**
+
+1. **Write Tests First** - Create comprehensive test coverage
+2. **Implement Feature** - Minimum code to make tests pass
+3. **User Verification** - Pause for user review of approach and code
+4. **Run All Tests** - Ensure no regressions
+5. **USER VERIFICATION GATE** - Present results and wait for approval
+
+## Phase 3: Troubleshooting & Quality
+**Only if tests fail**
+
+1. **Isolate Failures** - Fix one test at a time
+2. **Iterate Carefully** - Make targeted changes
+3. **Prevent Regressions** - Revert if changes break existing tests
+4. **Handle Persistent Failures** - Stop and ask for guidance after 2-3 attempts
+
+## Subphase Completion Protocol
+**After each subphase:**
+1. **STOP and BREAK**
+2. **Explain** what was implemented and rationale
+3. **Allow** user to read and ask questions
+4. **Wait** for approval before proceeding
+
+## Progress Tracking
+- Mark completed tasks as resolved in [README.md](mdc:README.md)
+- Update [KNOWLEDGE_BASE.md](mdc:KNOWLEDGE_BASE.md) with new findings
+- Document any deviations from original plan
+description:
+globs:
+alwaysApply: false
+---

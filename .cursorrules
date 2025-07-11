@@ -88,3 +88,9 @@ This cycle should be followed for *one feature at a time*.
     *   Keep `KNOWLEDGE_BASE.md` current with all technical details.
     *   Document any deviations from the original plan.
     *   **Progress Tracking:** Mark completed tasks as resolved in `README.md` when user confirms successful completion.
+
+5.  **Docker Container Management:**
+    *   **MANDATORY:** After making any changes to SQL files (init.sql, api_setup.sql, etc.), ALWAYS restart Docker containers with volume removal.
+    *   **Command Sequence:** `docker-compose down -v` followed by `docker-compose up -d`
+    *   **Rationale:** SQL changes require fresh database initialization to take effect properly.
+    *   **Verification:** After restart, verify the changes are applied by running tests or checking database state.

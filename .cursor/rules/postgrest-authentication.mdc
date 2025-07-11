@@ -1,0 +1,32 @@
+# PostgREST Authentication & Role Management
+
+## Three-Role System
+The project uses a three-role authentication system:
+
+1. **api_user** - Database owner with full permissions
+2. **api_anon** - Anonymous users (limited access)
+3. **api_authenticated** - Authenticated users (full access)
+
+## Role Hierarchy
+- `api_user` owns all objects and grants to other roles
+- `api_anon` has minimal permissions (login, basic reads)
+- `api_authenticated` has full CRUD permissions
+
+## Row Level Security (RLS)
+- All tables have RLS enabled
+- Policies control access based on user authentication
+- Users can only see/modify their own data where applicable
+
+## Configuration Files
+- [init.sql](mdc:init.sql) - Creates roles and basic schema
+- [api_setup.sql](mdc:api_setup.sql) - Sets up RLS policies and functions
+- [docker-compose.yml](mdc:docker-compose.yml) - PostgREST configuration
+
+## Common Issues
+- 401 Unauthorized: Check role permissions and RLS policies
+- 403 Forbidden: Verify user has correct role assignment
+- Connection failures: Ensure roles have LOGIN privilege
+description:
+globs:
+alwaysApply: false
+---

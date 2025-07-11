@@ -13,6 +13,9 @@ CREATE ROLE api_authenticated nologin;
 GRANT USAGE ON SCHEMA api TO api_user, api_anon, api_authenticated;
 GRANT USAGE ON SCHEMA public TO api_user, api_anon, api_authenticated;
 
+-- Grant create permissions on api schema to api_user
+GRANT CREATE ON SCHEMA api TO api_user;
+
 -- Grant basic permissions
 GRANT api_anon TO api_user;
 GRANT api_authenticated TO api_user;

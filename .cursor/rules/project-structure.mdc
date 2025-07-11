@@ -1,0 +1,30 @@
+# Project Structure & Key Files
+
+## Core Configuration Files
+- [docker-compose.yml](mdc:docker-compose.yml) - Docker services (PostgreSQL, PostgREST)
+- [pyproject.toml](mdc:pyproject.toml) - Python dependencies and project configuration
+- [poetry.lock](mdc:poetry.lock) - Locked dependency versions
+
+## Database Schema Files
+- [init.sql](mdc:init.sql) - Initial database setup (roles, tables, basic schema)
+- [api_setup.sql](mdc:api_setup.sql) - API functions, RLS policies, views
+
+## Testing Structure
+- [tests/conftest.py](mdc:tests/conftest.py) - Test configuration and fixtures
+- [tests/test_schema.py](mdc:tests/test_schema.py) - Database schema validation tests
+- [tests/test_api.py](mdc:tests/test_api.py) - PostgREST API endpoint tests
+- [tests/test_tasks.py](mdc:tests/test_tasks.py) - Task management function tests
+
+## Documentation
+- [README.md](mdc:README.md) - Project overview and implementation roadmap
+- [KNOWLEDGE_BASE.md](mdc:KNOWLEDGE_BASE.md) - Technical documentation and examples
+
+## Development Workflow
+1. Update [README.md](mdc:README.md) with requirements and roadmap
+2. Research and document in [KNOWLEDGE_BASE.md](mdc:KNOWLEDGE_BASE.md)
+3. Write tests first, then implement features
+4. Update documentation after successful implementation
+description:
+globs:
+alwaysApply: false
+---

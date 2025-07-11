@@ -1,0 +1,33 @@
+# Tool Usage Guidelines & Research Priorities
+
+## Research Tool Priority Order
+1. **codebase_search** - For semantic search within the project
+2. **grep_search** - For exact text/pattern matching
+3. **file_search** - For finding specific files
+4. **read_file** - For examining file contents
+
+## Research Source Priority
+1. **Official Documentation** (postgrest.org, postgresql.org, hub.docker.com)
+2. **Official GitHub Repositories** with examples
+3. **Existing project files** for patterns and examples
+
+## Tool Usage Guidelines
+- Use `codebase_search` for understanding existing code patterns
+- Use `grep_search` for finding specific function names, table names, or exact text
+- Use `read_file` to examine specific files when detailed context is needed
+- Use `file_search` when you know part of a filename but not exact location
+
+## Knowledge Base Management
+- Always update [KNOWLEDGE_BASE.md](mdc:KNOWLEDGE_BASE.md) with new research findings
+- Keep knowledge base organized by technology/topic
+- Include both working examples and common error patterns
+- Document concrete code examples that are directly applicable
+
+## When Research is Insufficient
+If after thorough search you cannot find sufficient information or clear examples:
+- **STOP** and ask the user for help
+- Do not proceed with implementation without adequate knowledge
+description:
+globs:
+alwaysApply: false
+---

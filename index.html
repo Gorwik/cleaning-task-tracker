@@ -257,9 +257,9 @@
                             <label for="username">Username:</label>
                             <select id="username" required>
                                 <option value="">Select your username</option>
-                                <option value="roommate1">roommate1</option>
-                                <option value="roommate2">roommate2</option>
-                                <option value="roommate3">roommate3</option>
+                                <option value="user1">user1</option>
+                                <option value="user2">user2</option>
+                                <option value="user3">user3</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -401,7 +401,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ p_username: username, p_password: password })
                 });
                 
                 const result = await response.json();
@@ -436,30 +436,25 @@
         
         async function loadCurrentAssignments() {
             try {
-                const response = await fetch(`${API_BASE}/current_assignments`);
+                const response = await fetch(`${API_BASE}/task_assignments`);
                 const assignments = await response.json();
                 
                 const container = document.getElementById('currentAssignments');
-                
-                if (assignments.length === 0) {
+                // Filter for assignments assigned to current user and not completed
+                const userAssignments = assignments.filter(a => a.user_id === currentUserId && !a.completed_at);
+                if (userAssignments.length === 0) {
                     container.innerHTML = '<p>No active assignments found.</p>';
                     return;
                 }
-                
-                container.innerHTML = assignments.map(assignment => `
-                    <div class="task-card ${assignment.is_overdue ? 'overdue' : ''}">
+                container.innerHTML = userAssignments.map(assignment => `
+                    <div class="task-card">
                         <h3>${assignment.task_name}</h3>
                         <div class="task-info">
-                            <div><strong>Category:</strong> ${assignment.category}</div>
                             <div><strong>Assigned to:</strong> ${assignment.assigned_to}</div>
-                            <div><strong>Duration:</strong> ${assignment.estimated_duration_minutes} min</div>
-                            <div><strong>Status:</strong> ${assignment.is_overdue ? 'Overdue' : 'Active'}</div>
+                            <div><strong>Assigned at:</strong> ${new Date(assignment.assigned_at).toLocaleString()}</div>
                         </div>
                         <p><strong>Description:</strong> ${assignment.description}</p>
-                        ${assignment.assigned_user_id === currentUserId ? 
-                            `<button class="btn btn-success" onclick="openCompleteTaskModal(${assignment.id}, '${assignment.task_name}')">Complete Task</button>` : 
-                            '<p><em>Not your turn</em></p>'
-                        }
+                        <button class="btn btn-success" onclick="openCompleteTaskModal(${assignment.assignment_id}, '${assignment.task_name}')">Complete Task</button>
                     </div>
                 `).join('');
             } catch (error) {
@@ -470,33 +465,21 @@
         
         async function loadPendingReviews() {
             try {
-                const response = await fetch(`${API_BASE}/pending_reviews`);
-                const reviews = await response.json();
-                
+                const response = await fetch(`${API_BASE}/task_assignments`);
+                const assignments = await response.json();
                 const container = document.getElementById('pendingReviews');
-                
+                // Reviews: completed, not yet reviewed, not completed by current user
+                const reviews = assignments.filter(a => a.completed_at && a.is_approved === null && a.user_id !== currentUserId);
                 if (reviews.length === 0) {
                     container.innerHTML = '<p>No tasks waiting for review.</p>';
                     return;
                 }
-                
-                // Filter reviews where current user can review
-                const userReviews = reviews.filter(review => 
-                    review.potential_reviewers.includes(currentUserId)
-                );
-                
-                if (userReviews.length === 0) {
-                    container.innerHTML = '<p>No tasks for you to review.</p>';
-                    return;
-                }
-                
-                container.innerHTML = userReviews.map(review => `
+                container.innerHTML = reviews.map(review => `
                     <div class="review-card">
                         <h3>${review.task_name}</h3>
-                        <p><strong>Completed by:</strong> ${review.completed_by}</p>
+                        <p><strong>Completed by:</strong> ${review.assigned_to}</p>
                         <p><strong>Completed at:</strong> ${new Date(review.completed_at).toLocaleString()}</p>
-                        ${review.notes ? `<p><strong>Notes:</strong> ${review.notes}</p>` : ''}
-                        <button class="btn" onclick="openReviewTaskModal(${review.completion_id}, '${review.task_name}', '${review.completed_by}')">Review Task</button>
+                        <button class="btn" onclick="openReviewTaskModal(${review.assignment_id}, '${review.task_name}', '${review.assigned_to}')">Review Task</button>
                     </div>
                 `).join('');
             } catch (error) {
@@ -507,27 +490,23 @@
         
         async function loadCompletionHistory() {
             try {
-                const response = await fetch(`${API_BASE}/completion_history?order=completed_at.desc&limit=10`);
-                const history = await response.json();
-                
+                const response = await fetch(`${API_BASE}/task_assignments`);
+                const assignments = await response.json();
                 const container = document.getElementById('completionHistory');
-                
+                // History: completed assignments, sorted by completed_at desc
+                const history = assignments.filter(a => a.completed_at).sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at)).slice(0, 10);
                 if (history.length === 0) {
                     container.innerHTML = '<p>No completion history found.</p>';
                     return;
                 }
-                
                 container.innerHTML = history.map(completion => `
                     <div class="task-card">
                         <h3>${completion.task_name}</h3>
                         <div class="task-info">
-                            <div><strong>Completed by:</strong> ${completion.completed_by}</div>
-                            <div><strong>Status:</strong> ${completion.status}</div>
-                            <div><strong>Reviews:</strong> ${completion.review_count}</div>
-                            <div><strong>Rating:</strong> ${completion.average_rating ? completion.average_rating.toFixed(1) : 'N/A'}</div>
+                            <div><strong>Completed by:</strong> ${completion.assigned_to}</div>
+                            <div><strong>Status:</strong> ${completion.is_approved === true ? 'Approved' : completion.is_approved === false ? 'Rejected' : 'Pending Review'}</div>
                         </div>
                         <p><strong>Completed:</strong> ${new Date(completion.completed_at).toLocaleString()}</p>
-                        ${completion.notes ? `<p><strong>Notes:</strong> ${completion.notes}</p>` : ''}
                     </div>
                 `).join('');
             } catch (error) {
@@ -542,8 +521,8 @@
             document.getElementById('completeTaskModal').classList.add('active');
         }
         
-        function openReviewTaskModal(completionId, taskName, completedBy) {
-            document.getElementById('reviewCompletionId').value = completionId;
+        function openReviewTaskModal(assignmentId, taskName, completedBy) {
+            document.getElementById('reviewCompletionId').value = assignmentId;
             document.getElementById('reviewTaskName').textContent = taskName;
             document.getElementById('reviewCompletedBy').textContent = completedBy;
             document.getElementById('reviewTaskModal').classList.add('active');
@@ -555,10 +534,8 @@
         
         async function handleCompleteTask(e) {
             e.preventDefault();
-            
             const taskAssignmentId = document.getElementById('taskAssignmentId').value;
             const notes = document.getElementById('completionNotes').value;
-            
             try {
                 const response = await fetch(`${API_BASE}/rpc/complete_task`, {
                     method: 'POST',
@@ -566,22 +543,18 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        task_assignment_id: parseInt(taskAssignmentId),
-                        completed_by_user_id: currentUserId,
-                        notes: notes || null
+                        p_assignment_id: parseInt(taskAssignmentId),
+                        p_user_id: currentUserId,
+                        p_notes: notes || null
                     })
                 });
-                
                 const result = await response.json();
-                
                 if (result.error) {
                     showAlert('appAlert', result.error, 'error');
                 } else {
                     showAlert('appAlert', result.message, 'success');
                     closeModal('completeTaskModal');
-                    // Clear form
                     document.getElementById('completionNotes').value = '';
-                    // Reload data
                     loadDashboardData();
                 }
             } catch (error) {
@@ -591,36 +564,29 @@
         }
         
         async function submitReview(approved) {
-            const completionId = document.getElementById('reviewCompletionId').value;
-            const rating = document.getElementById('taskRating').value;
+            const assignmentId = document.getElementById('reviewCompletionId').value;
             const comments = document.getElementById('reviewComments').value;
-            
+            // Note: The backend expects assignment_id and reviewer_id
             try {
-                const response = await fetch(`${API_BASE}/rpc/review_task`, {
+                const response = await fetch(`${API_BASE}/rpc/reject_task`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        completion_id: parseInt(completionId),
-                        reviewer_user_id: currentUserId,
-                        approved: approved,
-                        rating: parseInt(rating),
-                        comments: comments || null
+                        p_assignment_id: parseInt(assignmentId),
+                        p_reviewer_id: currentUserId,
+                        p_reason: approved ? null : (comments || null)
                     })
                 });
-                
                 const result = await response.json();
-                
                 if (result.error) {
                     showAlert('appAlert', result.error, 'error');
                 } else {
                     showAlert('appAlert', result.message, 'success');
                     closeModal('reviewTaskModal');
-                    // Clear form
                     document.getElementById('reviewComments').value = '';
                     resetStars();
-                    // Reload data
                     loadDashboardData();
                 }
             } catch (error) {

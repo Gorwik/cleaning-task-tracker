@@ -1,0 +1,27 @@
+# Test-Driven Development Workflow
+
+## Testing Strategy
+- Write tests that cover both success and failure scenarios
+- Include edge cases and boundary conditions
+- Test both API endpoints and direct database functions
+- Run tests via Poetry: `poetry run pytest`
+
+## Test File Structure
+- [tests/test_schema.py](mdc:tests/test_schema.py) - Database schema tests
+- [tests/test_api.py](mdc:tests/test_api.py) - PostgREST API tests
+- [tests/test_tasks.py](mdc:tests/test_tasks.py) - Task management tests
+
+## Test Execution
+- Always run the entire test suite after changes: `poetry run pytest`
+- Use verbose mode for debugging: `poetry run pytest -v`
+- Run specific test files: `poetry run pytest tests/test_tasks.py -v`
+
+## Test-Driven Approach
+1. Write tests first before implementing features
+2. Implement minimum code to make tests pass
+3. Run all tests to ensure no regressions
+4. If tests fail, fix one at a time starting with most relevant
+description:
+globs:
+alwaysApply: false
+---
