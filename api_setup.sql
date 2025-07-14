@@ -244,13 +244,20 @@ BEGIN
     RETURN json_build_object('error', 'You can only complete your own tasks');
   END IF;
 
-  -- Check if already completed
-  IF v_assignment.completed_at IS NOT NULL THEN
+  -- Only allow completion if not completed yet, or if previously rejected
+  IF v_assignment.completed_at IS NOT NULL AND v_assignment.is_approved IS DISTINCT FROM FALSE THEN
     PERFORM set_config('response.status', '400', true);
     RETURN json_build_object('error', 'Task is already completed');
   END IF;
 
-  -- Mark as completed
+  -- If previously rejected, reset is_approved to null
+  IF v_assignment.is_approved = FALSE THEN
+    UPDATE public.task_assignments 
+    SET is_approved = NULL
+    WHERE assignment_id = p_assignment_id;
+  END IF;
+
+  -- Mark as completed (overwrite completed_at)
   UPDATE public.task_assignments 
   SET completed_at = NOW()
   WHERE assignment_id = p_assignment_id;

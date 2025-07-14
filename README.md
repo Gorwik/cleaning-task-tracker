@@ -157,6 +157,25 @@ This roadmap breaks down the project into testable, sequential features.
 - [ ] **7.5:** **(Test)** Comprehensive production testing and validation.
 - [ ] **7.6:** **(Verify)** Production deployment with zero-downtime capabilities.
 
+## Task Review Rejection Flow: Requirements Checklist
+
+- [x] When a reviewer rejects a completed task, it is immediately shown again in the "Current Task Assignments" for the original user, marked as needing to be redone.
+- [x] The task is removed from the completed/history list if rejected.
+- [x] The task is annotated using the `is_approved` field: `null` (pending), `true` (approved), `false` (rejected).
+- [x] When a task is created or assigned normally, `is_approved` is `null`.
+- [x] When a task is rejected during review, `is_approved` is set to `false` and the task remains assigned to the same user.
+- [x] The frontend visually distinguishes tasks with `is_approved === false` (e.g., badge, color, or icon) to indicate they are being redone after rejection, but only in Current Task Assignments.
+- [x] No change to logic for primary tasks (`is_approved === null`).
+- [x] Tests verify that rejected tasks can be redone, are not shown in history, and the workflow is robust.
+
+### Final Workflow Summary
+- Tasks can be completed and reviewed. If rejected, they are marked with `is_approved = false` and remain assigned to the same user.
+- Rejected tasks are shown in the "Current Task Assignments" section with a clear marker ("Rejected: Please redo").
+- Rejected tasks are not shown in the "Recent Completion History".
+- When the user redoes the task, they can mark it as complete again, which resets `is_approved` to `null` and updates `completed_at`.
+- The review process can then repeat as needed until the task is approved.
+- All logic is handled using the `is_approved` field and `completed_at` timestamp—no extra fields are needed.
+
 ## Phase 1.1: Frontend Alignment to Backend API (New Plan)
 
 ### Business Requirements

@@ -237,6 +237,25 @@
         .star.active, .star:hover {
             color: #ffc107;
         }
+
+        .task-card.rejected {
+            border-left-color: #ff3b3b;
+            background: #fff0f0;
+            position: relative;
+        }
+        .rejected-badge {
+            display: inline-block;
+            background: #ff3b3b;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+        }
     </style>
 </head>
 <body>
@@ -438,25 +457,36 @@
             try {
                 const response = await fetch(`${API_BASE}/task_assignments`);
                 const assignments = await response.json();
-                
                 const container = document.getElementById('currentAssignments');
-                // Filter for assignments assigned to current user and not completed
-                const userAssignments = assignments.filter(a => a.user_id === currentUserId && !a.completed_at);
+                // Show assignments assigned to current user and either:
+                // - not completed (completed_at is null), or
+                // - completed but rejected (is_approved === false)
+                const userAssignments = assignments.filter(a =>
+                    a.user_id === currentUserId &&
+                    (
+                        !a.completed_at ||
+                        (a.completed_at && a.is_approved === false)
+                    )
+                );
                 if (userAssignments.length === 0) {
                     container.innerHTML = '<p>No active assignments found.</p>';
                     return;
                 }
-                container.innerHTML = userAssignments.map(assignment => `
-                    <div class="task-card">
-                        <h3>${assignment.task_name}</h3>
-                        <div class="task-info">
-                            <div><strong>Assigned to:</strong> ${assignment.assigned_to}</div>
-                            <div><strong>Assigned at:</strong> ${new Date(assignment.assigned_at).toLocaleString()}</div>
+                container.innerHTML = userAssignments.map(assignment => {
+                    const rejected = assignment.is_approved === false;
+                    return `
+                        <div class="task-card${rejected ? ' rejected' : ''}">
+                            ${rejected ? '<span class="rejected-badge">Rejected: Please redo</span>' : ''}
+                            <h3>${assignment.task_name}</h3>
+                            <div class="task-info">
+                                <div><strong>Assigned to:</strong> ${assignment.assigned_to}</div>
+                                <div><strong>Assigned at:</strong> ${new Date(assignment.assigned_at).toLocaleString()}</div>
+                            </div>
+                            <p><strong>Description:</strong> ${assignment.description}</p>
+                            <button class="btn btn-success" onclick="openCompleteTaskModal(${assignment.assignment_id}, '${assignment.task_name}')">Complete Task</button>
                         </div>
-                        <p><strong>Description:</strong> ${assignment.description}</p>
-                        <button class="btn btn-success" onclick="openCompleteTaskModal(${assignment.assignment_id}, '${assignment.task_name}')">Complete Task</button>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             } catch (error) {
                 console.error('Error loading assignments:', error);
                 document.getElementById('currentAssignments').innerHTML = '<p>Error loading assignments.</p>';
@@ -494,7 +524,7 @@
                 const assignments = await response.json();
                 const container = document.getElementById('completionHistory');
                 // History: completed assignments, sorted by completed_at desc
-                const history = assignments.filter(a => a.completed_at).sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at)).slice(0, 10);
+                const history = assignments.filter(a => a.completed_at && (a.is_approved === null || a.is_approved === true)).sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at)).slice(0, 10);
                 if (history.length === 0) {
                     container.innerHTML = '<p>No completion history found.</p>';
                     return;

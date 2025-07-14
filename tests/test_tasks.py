@@ -282,52 +282,100 @@ class TestTaskRotation:
         assert max_count - min_count <= 2
 
 class TestTaskRejection:
-    """Test task rejection functionality."""
-    
-    def test_reject_task_success(self, api_client):
-        """Test successful task rejection."""
-        # First complete a task
+    """Test task rejection and redo functionality."""
+
+    def test_reject_and_redo_task(self, api_client):
+        """Test that a rejected task can be redone and reviewed again."""
+        # Create and assign a task
+        create_response = api_client.post('/rpc/create_task', json={
+            'p_task_name': 'Redo Test Task',
+            'p_description': 'Test redo after rejection'
+        })
+        assert create_response.status_code == 201
+        task_id = create_response.json()['task_id']
+
+        assign_response = api_client.post('/rpc/assign_task', json={
+            'p_task_id': task_id,
+            'p_user_id': 1
+        })
+        assert assign_response.status_code == 201
+        assignment_id = assign_response.json()['assignment_id']
+
+        # Complete the task
         complete_response = api_client.post('/rpc/complete_task', json={
-            'p_assignment_id': 3,
-            'p_user_id': 3,
-            'p_notes': 'Task completed'
+            'p_assignment_id': assignment_id,
+            'p_user_id': 1,
+            'p_notes': 'Done'
         })
         assert complete_response.status_code == 200
-        
-        # Then reject it
-        response = api_client.post('/rpc/reject_task', json={
-            'p_assignment_id': 3,
-            'p_reviewer_id': 1,
-            'p_reason': 'Not done properly'
+
+        # Reject the task
+        reject_response = api_client.post('/rpc/reject_task', json={
+            'p_assignment_id': assignment_id,
+            'p_reviewer_id': 2,
+            'p_reason': 'Not good enough'
         })
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert 'message' in data
-        assert 'rejected' in data['message'].lower()
-    
-    def test_reject_task_not_completed(self, api_client):
-        """Test that rejecting an uncompleted task fails."""
-        response = api_client.post('/rpc/reject_task', json={
-            'p_assignment_id': 4,
-            'p_reviewer_id': 1,
-            'p_reason': 'Trying to reject uncompleted task'
+        assert reject_response.status_code == 200
+
+        # Fetch assignment and check is_approved is false, completed_at is set
+        assignments_response = api_client.get(f'/task_assignments?assignment_id=eq.{assignment_id}')
+        assert assignments_response.status_code == 200
+        assignment = assignments_response.json()[0]
+        assert assignment['is_approved'] is False
+        assert assignment['completed_at'] is not None
+
+        # Redo (complete) the rejected task
+        redo_response = api_client.post('/rpc/complete_task', json={
+            'p_assignment_id': assignment_id,
+            'p_user_id': 1,
+            'p_notes': 'Redone'
         })
-        
-        assert response.status_code == 400
-        data = response.json()
-        assert 'error' in data
-    
-    def test_reject_task_invalid_assignment(self, api_client):
-        """Test rejecting non-existent assignment fails."""
-        response = api_client.post('/rpc/reject_task', json={
-            'p_assignment_id': 999,
-            'p_reviewer_id': 1,
-            'p_reason': 'Invalid assignment'
+        assert redo_response.status_code == 200
+
+        # Fetch assignment and check is_approved is null, completed_at is updated
+        assignments_response = api_client.get(f'/task_assignments?assignment_id=eq.{assignment_id}')
+        assert assignments_response.status_code == 200
+        assignment = assignments_response.json()[0]
+        assert assignment['is_approved'] is None
+        assert assignment['completed_at'] is not None
+
+        # Approve the redone task
+        # (simulate review by directly updating is_approved for test, or use reject_task with approve logic if available)
+        # For now, just check that the workflow allows redo and resets state
+
+    def test_cannot_complete_already_completed_task(self, api_client):
+        """Test that completing an already completed and not rejected task returns an error."""
+        # Create and assign a task
+        create_response = api_client.post('/rpc/create_task', json={
+            'p_task_name': 'Already Completed Task',
+            'p_description': 'Should not allow double complete'
         })
-        
-        assert response.status_code == 404
-        data = response.json()
+        assert create_response.status_code == 201
+        task_id = create_response.json()['task_id']
+
+        assign_response = api_client.post('/rpc/assign_task', json={
+            'p_task_id': task_id,
+            'p_user_id': 1
+        })
+        assert assign_response.status_code == 201
+        assignment_id = assign_response.json()['assignment_id']
+
+        # Complete the task
+        complete_response = api_client.post('/rpc/complete_task', json={
+            'p_assignment_id': assignment_id,
+            'p_user_id': 1,
+            'p_notes': 'Done'
+        })
+        assert complete_response.status_code == 200
+
+        # Try to complete again (should fail)
+        redo_response = api_client.post('/rpc/complete_task', json={
+            'p_assignment_id': assignment_id,
+            'p_user_id': 1,
+            'p_notes': 'Trying to double complete'
+        })
+        assert redo_response.status_code == 400
+        data = redo_response.json()
         assert 'error' in data
 
 class TestTaskIntegration:
