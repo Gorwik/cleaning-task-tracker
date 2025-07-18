@@ -1,3 +1,26 @@
+### Documentation & Knowledge Base Structure (2025-07-18)
+
+1. The project documentation is split as follows:
+   - `README.md`: Standard project README (summary, install, usage, links)
+   - `requirements.md`: Project description, goals, roadmap, requirements, acceptance criteria
+   - `design.md`: Technology stack, architecture, design guidelines, rationale
+   - `todo_check_list.md`: All stages, phases, and subphases as a canonical checklist (progress tracking is done here)
+   - `knowledgebase/`: Folder containing all technical knowledge, code examples, and implementation patterns, split into context-specific files (e.g., postgrest.md, rls.md, production_ownership.md, testing.md, etc.)
+
+2. All contributors must:
+   - Keep requirements, design, and checklist files up to date as features are added or changed
+   - Add new knowledgebase files as needed and keep them organized by topic
+   - Update navigation links in all docs as structure evolves
+
+3. The workflow for research, planning, and implementation must reference and update these files at each phase and subphase:
+   - Research and planning: Reference requirements.md, design.md, and knowledgebase/ for patterns and best practices.
+   - Implementation: Write tests first, then implement features, updating todo_check_list.md and knowledgebase/ as needed.
+   - After implementation: Document any new patterns, troubleshooting, or best practices in knowledgebase/.
+
+4. The knowledgebase/ folder is the canonical source for all technical patterns, troubleshooting, and best practices. Before implementing any functionality, always check knowledgebase/ for relevant patterns, examples, or best practices. If new knowledge is gathered during implementation, add it to the appropriate file in knowledgebase/.
+
+5. All previous documentation rules remain in effect unless superseded by this structure.
+
 ### Development Workflow & Rules
 
 This is a strict, mandatory workflow. Each step must be followed precisely. Do not proceed to the next step without explicit user approval at the verification gates.
@@ -9,7 +32,7 @@ This is a strict, mandatory workflow. Each step must be followed precisely. Do n
 1.  **Define Requirements (The "What"):**
     *   Clarify the precise business requirements for the feature.
     *   Break down the feature into a step-by-step implementation roadmap.
-    *   **Action:** Update the `README.md` file with this plan.
+    *   **Action:** Update the `requirements.md` file with this plan.
 
 2.  **Build Knowledge Base (The "How"):**
     *   **Prerequisite:** This is a mandatory, deep-dive research step.
@@ -23,12 +46,12 @@ This is a strict, mandatory workflow. Each step must be followed precisely. Do n
         2.  **Official or acknowledged GitHub Repositories** containing examples.
         3.  **Existing project files** for patterns and examples.
     *   **Content Requirement:** The research must produce **concrete code examples** that are directly applicable to the task.
-    *   **Action:** Synthesize this research and the examples into the `KNOWLEDGE_BASE.md` file.
+    *   **Action:** Synthesize this research and the examples into the appropriate file(s) in the `knowledgebase/` folder.
     *   **Stuck?** If, after a thorough search, you cannot find sufficient information or clear examples, **STOP** and ask the user for help.
 
 3.  **USER VERIFICATION GATE:**
     *   **STOP.**
-    *   **Action:** Announce that Phase 1 is complete and present the gathered Knowledge Base to the user for review.
+    *   **Action:** Announce that Phase 1 is complete and present the gathered knowledge base content for review (pointing to the relevant file(s) in `knowledgebase/`).
     *   **Action:** Ask for explicit approval to proceed (e.g., "Is this knowledge base sufficient? May I proceed to the next step?").
     *   **DO NOT** move to Phase 2 without a "yes" or equivalent confirmation from the user.
 
@@ -74,7 +97,7 @@ This cycle should be followed for *one feature at a time*.
     *   Use `file_search` when you know part of a filename but not its exact location.
 
 2.  **Knowledge Base Management:**
-    *   Always update `KNOWLEDGE_BASE.md` with new research findings and code examples.
+    *   Always update the appropriate file(s) in `knowledgebase/` with new research findings and code examples.
     *   Keep the knowledge base organized by technology/topic.
     *   Include both working examples and common error patterns.
 
@@ -84,13 +107,9 @@ This cycle should be followed for *one feature at a time*.
     *   Test both API endpoints and direct database functions.
 
 4.  **Documentation:**
-    *   Update `README.md` with implementation progress.
-    *   Keep `KNOWLEDGE_BASE.md` current with all technical details.
+    *   Update `requirements.md`, `design.md`, and `todo_check_list.md` with implementation progress and changes.
+    *   Keep `knowledgebase/` current with all technical details.
     *   Document any deviations from the original plan.
-    *   **Progress Tracking:** Mark completed tasks as resolved in `README.md` when user confirms successful completion.
+    *   **Progress Tracking:** Mark completed tasks as resolved in `todo_check_list.md` when user confirms successful completion.
 
-5.  **Docker Container Management:**
-    *   **MANDATORY:** After making any changes to SQL files (init.sql, api_setup.sql, etc.), ALWAYS restart Docker containers with volume removal.
-    *   **Command Sequence:** `docker-compose down -v` followed by `docker-compose up -d`
-    *   **Rationale:** SQL changes require fresh database initialization to take effect properly.
-    *   **Verification:** After restart, verify the changes are applied by running tests or checking database state.
+5. Before implementing any functionality, always check the knowledgebase/ folder for relevant patterns, examples, or best practices. If new knowledge is gathered during implementation, add it to the appropriate file in knowledgebase/.
